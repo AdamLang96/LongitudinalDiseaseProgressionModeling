@@ -1,3 +1,22 @@
+#' A function to model full term disease pathogenisis 
+#'  based on short term longitudinal data
+#'  
+#'  @param data (data.frame) a data frame containing:
+#'   Outcome of interest (numeric)
+#'   Column ID with subject id's (factor)
+#'   Column Time_Since_Baseline amount of time since baseline observation, can be days, months, years etc where baseline value = 0
+#'  @param formula.fixed (character) String with fixed effect formula (should be "outcome ~ Time_Since_Baseline")
+#'  @param formula.random (character) String with random effect formula, default reccomended (default is "~1+Time_Since_Baseline|ID")
+#'  @param n_iter (numeric) Number of iterations for bootstrapping, (default is 1)
+#'  @param n_sample (numeric) Proportion of data preserved for bootstrapping (default is 1)
+#'  @param lme.control (list) lmeControl list for mixed effect modeling
+#'  @param individual.lm (logical) Logical indicating whether to use multiple linear models fit
+#'   to individual subjects in order to calculate Midpoints/Rates instead of Mixed Effects model. Default is reccomended (default is FALSE )
+#'  @param seq.by (numeric) # of times to integrate along polynomial reciprocal domain, as the curve is generated pointwise. Upping the value increases fitting time.
+#'   (default is 1000)
+#'  @param verbose (logical) Prints information during fitting process (default is TRUE)
+#'  @returns (list) List with disease progression model data and other related information
+#'  
 FitDiseaseProgressionCurve <- function(data, formula.fixed, 
                                        formula.random    = "~1+Time_Since_Baseline|ID", 
                                        n_iter            = 1,
@@ -59,14 +78,7 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
                                                                      EstimateMeanSlopeOutput                  = EstimateMeanSlopeOutput,
                                                                      DefinePolynomialCurveAndReciprocalOutput = PolynomialCurveOutput,
                                                                      seq.by                                   = seq.by)
-   #return(list("FindRealRoots" = FindRealRootsOutput, "CheckRealRoots"= CheckRealRootsOutput, 
-  #             "BoundsofInt"= CalculateBoundsofIntegrationOutput, "Poly" = PolynomialCurveOutput, 
-  #             "MeanSlopePlot" = PlotEstimateMeanSlopeOutput))
- # if(CalculateBoundsofIntegrationOutput == "3_FAILS") {
-#    stop("Polynomial has 3 real roots within the bounds of integration. Data is unfit for modeling")
-#  }
-
-  for(i in 1:n_iter) {
+   for(i in 1:n_iter) {
     sample.mean.slope             <- sample_n(EstimateMeanSlopeOutput, round(n_sample * nrow(EstimateMeanSlopeOutput)))
     sample.polynomial.output      <- FitPolynomial(sample.mean.slope)
     sample.real.roots.output      <- FindRealRoots(sample.polynomial.output)

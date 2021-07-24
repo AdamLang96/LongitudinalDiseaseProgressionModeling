@@ -15,6 +15,13 @@ library(RConics)
 
 #--------------------------------------------------------------------------------------------- 
 
+#' Creates data.frame of Midpoints vs Rates for
+#'  individual subjects curves
+#'  
+#' @param BuildDictionary (list) A list of arguments from  \emph{FitDiseaseProgressionCurve} function
+#' @return (data.frame) A data frame with columns ID, Midpoints, Rates
+#' 
+
 EstimateMeanSlope <- function(BuildDictionary) {
   method.logical <- BuildDictionary[["individual.lm"]]
   data           <- BuildDictionary[["data"]]
@@ -69,6 +76,11 @@ EstimateMeanSlope <- function(BuildDictionary) {
 }
 #---------------------------------------------------------------------------------------------
 
+#' Fits 3rd degree poly over Midpoints/Rates data
+#' 
+#' @param EstimateMeanSlopeOutput (data.frame) Output from \emph{EstimateMeanSlope} function
+#' @return (list) Coefficients of fitted 3rd degree polynomial
+#' 
 FitPolynomial <- function(EstimateMeanSlopeOutput) {
   data <- EstimateMeanSlopeOutput
   third.degree.poly <- lm(Rates ~ poly(Midpoints, 3, raw = TRUE), 
@@ -83,7 +95,11 @@ FitPolynomial <- function(EstimateMeanSlopeOutput) {
 }
 
 #---------------------------------------------------------------------------------------------
-
+#' Calculates the roots (real) of the fitted polynomial
+#' 
+#' @param FitPolynomialOutput (list) Output from \emph{FitPolynomial} function
+#' @return (vector) Vector of real roots of fitted polynomial
+#' 
 FindRealRoots <- function(FitPolynomialOutput) {
   poly.coefs  <- FitPolynomialOutput
   poly.coefs  <- c(poly.coefs[["coef.x3"]], poly.coefs[["coef.x2"]], 
@@ -97,7 +113,13 @@ FindRealRoots <- function(FitPolynomialOutput) {
 }
 
 #---------------------------------------------------------------------------------------------
-
+#' Checks to see whether the roots satisfy criterion for integration
+#'  
+#' @param FindRealRootsOutput (vector) Output from \emph{FindRealRoots} function
+#' @param EstimateMeanSlopeOutput (data.frame) Output from \emph{EstimateMeanSlope} function
+#' @return (list) List of all real roots with logical value indicating
+#'  whether they satisfy integration conditions
+#'  
 CheckRealRoots <- function(FindRealRootsOutput, EstimateMeanSlopeOutput) {
   all.roots     <- c()
   roots.satisfy <- list()
@@ -130,7 +152,13 @@ CheckRealRoots <- function(FindRealRootsOutput, EstimateMeanSlopeOutput) {
 }
 
 #---------------------------------------------------------------------------------------------
-
+#' Defines functions for 3rd degree polynomial and reciprocal of
+#'  3rd degree polynomial from fitted polynomial coefficients
+#'  
+#'  @param FitPolynomialOutput (list) Output from \emph{FitPolynomial} function
+#'  @return (list) List of functions for checking polynomial fit visually 
+#'   and integrating polynomial reciprocal
+#'   
 DefinePolynomialCurveAndReciprocal <- function(FitPolynomialOutput) {
   poly.coefs      <- FitPolynomialOutput
   PolynomialCurve <- function(x) {
@@ -151,6 +179,17 @@ DefinePolynomialCurveAndReciprocal <- function(FitPolynomialOutput) {
 }
 
 #---------------------------------------------------------------------------------------------
+#' Calculates the window of integration based on min and max midpoints,
+#'  roots of the fitted polynomial, and the direction of the curve.
+#'  
+#'  @param CheckRealRootsOutput (list) Output from \emph{CheckRealRoots} function
+#'  @param EstimateMeanSlopeOutput (data.frame) Output from \emph{EstimateMeanSlope} function
+#'  @param DefinePolynomialCurveAndReciprocalOutput (list) Output from \emph{DefinePolynomialCurveAndReciprocal} function
+#'  @param seq.by (numeric) # of times to integrate along curve (default is 1000)
+#'  @return (list) a list of values containing the integration domain,
+#'   whether the domain was subsetted due to roots of the polynomial, and
+#'   the direction of the curve (positive/negative)
+#'   
 
 CalculateBoundsofIntegration <- function(CheckRealRootsOutput, EstimateMeanSlopeOutput, DefinePolynomialCurveAndReciprocalOutput, seq.by) {
   polynomial.curve <- DefinePolynomialCurveAndReciprocalOutput[["Polynomial_Function"]]
@@ -234,7 +273,12 @@ CalculateBoundsofIntegration <- function(CheckRealRootsOutput, EstimateMeanSlope
   }
   
 #---------------------------------------------------------------------------------------------
-
+#' Calculates integral of polynomial along polynomial domain
+#' 
+#' @param DefinePolynomialCurveAndReciprocalOutput (list) Output of \emph{DefinePolynomialCurveAndReciprocal} function
+#' @param CalculateBoundsofIntegrationOutput (list) Output of \emph{CalculateBoundsofIntegration} function
+#' @return (vector) Vector of integrated values 
+#' 
 IntegratePolynomial <- function(DefinePolynomialCurveAndReciprocalOutput, CalculateBoundsofIntegrationOutput) {
   integration.function      <- DefinePolynomialCurveAndReciprocalOutput[["Reciprocal_Function"]]
   integration.domain        <- CalculateBoundsofIntegrationOutput[["integration_domain"]]
@@ -255,6 +299,13 @@ IntegratePolynomial <- function(DefinePolynomialCurveAndReciprocalOutput, Calcul
 }
 
 #---------------------------------------------------------------------------------------------
+#' Calculates mean and standard error at each point along the domain of the
+#'  curve from boostrap iterations
+#'  
+#' @param CalculateBoundsofIntegrationOutput (list) Output of \emph{CalculateBoundsofIntegration} function
+#' @param BootStrappedDF (data.frame) Data frame of bootstrapped values
+#' @return (data.frame) Disease progression model data
+#' 
 
 CalculateSE <- function(CalculateBoundsofIntegrationOutput, BootStrappedDF) {
   BootStrappedDF <- as.matrix(BootStrappedDF)
@@ -277,7 +328,13 @@ CalculateSE <- function(CalculateBoundsofIntegrationOutput, BootStrappedDF) {
 }
 
 #---------------------------------------------------------------------------------------------
-
+#' Determines whether to reorder the disease progression model data depending on if the curve
+#'  is decreasing
+#'  
+#' @param CalculateSEOutput (matrix) Output from \emph{CalculateSE} function
+#' @param CalculateBoundsofIntegrationOutput (list) Output from \emph{CalculateBoundsofIntegration} function
+#' @return (data.frame) Disease progression data reordered if necessary
+#' 
 ReorderIfDecreasing <- function(CalculateSEOutput, CalculateBoundsofIntegrationOutput) {
   direction <- CalculateBoundsofIntegrationOutput[["direction"]]
   disease.progression.data <- as.data.frame(CalculateSEOutput)
@@ -291,7 +348,13 @@ ReorderIfDecreasing <- function(CalculateSEOutput, CalculateBoundsofIntegrationO
 }
 
 #---------------------------------------------------------------------------------------------
-
+#' Recalculate bounds of integration for each bootstrap iteration
+#'  to ensure integration step does not fail
+#'  
+#' @param IntegrationBoundsFull (list) CalculateBoundsofIntegrationOutput list
+#' @param IntegrationBoundsSample (list) output from \emph{CalculateBoundsofIntegration} on bootstrapped data
+#' @return (list) list with integration domain, start/end points of integration, index of start/end points
+#' 
 BootStrapCurves <- function(IntegrationBoundsFull, IntegrationBoundsSample) {
   integration.domain.full         <- IntegrationBoundsFull[["integration_domain"]]
   integration.domain.full.start   <- IntegrationBoundsFull[["integration_start"]]
@@ -316,7 +379,11 @@ BootStrapCurves <- function(IntegrationBoundsFull, IntegrationBoundsSample) {
 }
 
 #--------------------------------------------------------------------------------------------- Generate plots
-
+#' Plots disease progression curve
+#' 
+#' @param data (data.frame) Disease progression data frame
+#' @return (ggplot) Plot of disease progression curve
+#' 
 PlotCurve <- function(data) {
   na.remove       <- which(is.na(data$Domain))
   if(length(na.remove) >= 1) {
@@ -330,7 +397,11 @@ PlotCurve <- function(data) {
  }
 
 #---------------------------------------------------------------------------------------------
-
+#' Plots Midpoints vs Rates
+#' 
+#' @param data (data.frame) Midpoints vs Rates data frame (EstimateMeanSlopeOutput)
+#' @return (ggplot) Plot of Midpoints vs Rates
+#' 
 PlotMeanSlope <- function(data) {
   plot        <- ggplot(data = data, aes(x = Midpoints, y = Rates)) + geom_point()
   return(plot)
