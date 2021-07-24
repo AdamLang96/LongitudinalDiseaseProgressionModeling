@@ -20,6 +20,7 @@ EstimateMeanSlope <- function(BuildDictionary) {
   data           <- BuildDictionary[["data"]]
   formula.fixed  <- BuildDictionary[["formula.fixed"]]
   formula.random <- BuildDictionary[["formula.random"]]
+  model.control  <- BuildDictionary[["lmeControl"]]
   rate.vec       <- c()
   midpoint.vec   <- c()
   if(method.logical) {
@@ -40,7 +41,9 @@ EstimateMeanSlope <- function(BuildDictionary) {
     
   } else {
     model      <- lme(as.formula(formula.fixed), 
-                      random = as.formula(formula.random), data = data)
+                      random  = as.formula(formula.random), 
+                      data    = data,
+                      control = model.control)
     re         <- nlme :: ranef(model)
     fe         <- nlme :: fixef(model)
     splitdata  <- split(data, data$ID)
@@ -168,12 +171,14 @@ CalculateBoundsofIntegration <- function(CheckRealRootsOutput, EstimateMeanSlope
   } else {
     direction <- "increasing"
   }
+  
   if(!CheckRealRootsOutput[["all_roots_satisfy?"]]) {
     roots <- CheckRealRootsOutput
     roots[["all_roots_satisfy?"]] <- NULL
     which.fails    <- unlist(map(roots, pluck, 2))
     which.fails    <- !which.fails
     roots.fails    <- unlist(map(roots[which.fails], pluck, 1))
+  if(direction == "increasing") {    # positive rates
     if(length(roots.fails) == 1) {
       if(min.midpoint.y < 0 & max.midpoint.y > 0) {
          a           <- roots.fails
@@ -190,11 +195,36 @@ CalculateBoundsofIntegration <- function(CheckRealRootsOutput, EstimateMeanSlope
     } else if(length(roots.fails) == 3) {
         return("3_FAILS")
       }
+  } else {                         # negative rates 
+      if(length(roots.fails) == 1) {
+        if(min.midpoint.y < 0 & max.midpoint.y > 0) {
+          b           <- roots.fails
+          tail_subset <- TRUE
+        } else if(min.midpoint.y > 0 & max.midpoint.y < 0) {
+          a           <- roots.fails
+          head_subset <- TRUE
+        }
+      } else if(length(roots.fails == 2)) {
+        a <- min(roots.fails)
+        b <- max(roots.fails)
+        head_subset <- TRUE
+        tail_subset <- TRUE
+      } else if(length(roots.fails) == 3) {
+        return("3_FAILS")
+      }
+    }
   }
-
   seq.by = (b - a) / seq.by
   integration.domain <- seq(a, b, by = seq.by)
-  integration.domain <- integration.domain[2 : length(integration.domain)]
+  if(head_subset & tail_subset) {
+  integration.domain <- integration.domain[2 : (length(integration.domain) - 1)]
+  } else if (head_subset & !tail_subset) {
+    integration.domain <- integration.domain[2 : length(integration.domain)]
+  } else if(!head_subset & tail_subset) {
+    integration.domain <- integration.domain[1 : (length(integration.domain) - 1)]
+  } else {
+    integration.domain <- integration.domain
+  }
   return(list("integration_start"    = a,
               "integration_end"      = b,
               "integration_domain"   = integration.domain,
@@ -250,14 +280,13 @@ CalculateSE <- function(CalculateBoundsofIntegrationOutput, BootStrappedDF) {
 
 ReorderIfDecreasing <- function(CalculateSEOutput, CalculateBoundsofIntegrationOutput) {
   direction <- CalculateBoundsofIntegrationOutput[["direction"]]
-  disease.progression.data <- CalculateSEOutput
+  disease.progression.data <- as.data.frame(CalculateSEOutput)
   if(direction == "decreasing") {
-    disease.progression.data$Domain              <- disease.progression.data$Domain * -1
-    disease.progression.data$CI_Low              <- disease.progression.data$CI_Low * -1
-    disease.progression.data$CI_Hi               <- disease.progression.data$CI_Hi  * -1
-    disease.progression.data$Response            <- disease.progression.data["Response"][nrow(disease.progression.data):1,]
+    disease.progression.data["Domain"]              <- disease.progression.data["Domain"] * -1
+    disease.progression.data["CI_Low"]              <- disease.progression.data["CI_Low"] * -1
+    disease.progression.data["CI_Hi"]               <- disease.progression.data["CI_Hi"]  * -1
+    disease.progression.data["Response"]            <- disease.progression.data["Response"][nrow(disease.progression.data):1,]
   }
-  disease.progression.data                       <- as.data.frame(disease.progression.data)
  return(disease.progression.data)  
 }
 

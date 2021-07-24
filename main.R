@@ -27,7 +27,7 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
   }
   
   if(!all(levels(test.data$ID) %in% unique(test.data$ID))) {
-    stop("Remove missing ID factor level before modeling")
+    stop("Remove missing ID factor level(s) before modeling")
   }
   
   init.bootstrap.dataframe <- list()
@@ -59,6 +59,12 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
                                                                      EstimateMeanSlopeOutput                  = EstimateMeanSlopeOutput,
                                                                      DefinePolynomialCurveAndReciprocalOutput = PolynomialCurveOutput,
                                                                      seq.by                                   = seq.by)
+   #return(list("FindRealRoots" = FindRealRootsOutput, "CheckRealRoots"= CheckRealRootsOutput, 
+  #             "BoundsofInt"= CalculateBoundsofIntegrationOutput, "Poly" = PolynomialCurveOutput, 
+  #             "MeanSlopePlot" = PlotEstimateMeanSlopeOutput))
+ # if(CalculateBoundsofIntegrationOutput == "3_FAILS") {
+#    stop("Polynomial has 3 real roots within the bounds of integration. Data is unfit for modeling")
+#  }
 
   for(i in 1:n_iter) {
     sample.mean.slope             <- sample_n(EstimateMeanSlopeOutput, round(n_sample * nrow(EstimateMeanSlopeOutput)))
@@ -70,7 +76,7 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
     sample.calculate.bounds       <- CalculateBoundsofIntegration(sample.check.roots.output,
                                                                   sample.mean.slope,
                                                                   sample.curve.output,
-                                                                  seq.by )
+                                                                  seq.by)
     check.bounds                  <- BootStrapCurves(CalculateBoundsofIntegrationOutput,
                                                      sample.calculate.bounds)
     bootstrap.subset              <- IntegratePolynomial(sample.curve.output,
@@ -91,15 +97,12 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
   }
   bootstrap.dataframe             <- do.call(bind_cols, 
                                              init.bootstrap.dataframe)
-  
   colnames(bootstrap.dataframe)   <- names(bootstrap.list) <-  paste("iter_", 1 : n_iter, sep = "")
                                            
   CalculateSEOutput               <- CalculateSE(CalculateBoundsofIntegrationOutput,
                                                  bootstrap.dataframe)
-  
   ReorderIfDecreasingOutput       <- ReorderIfDecreasing(CalculateSEOutput,
                                                          CalculateBoundsofIntegrationOutput)
- 
   PlotCurveOutput                 <- PlotCurve(ReorderIfDecreasingOutput)
   
   if(verbose) {
