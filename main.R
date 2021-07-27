@@ -50,7 +50,6 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
   }
   
   init.bootstrap.dataframe <- list()
-  init.bootstrap.vector    <- rep(NA, seq.by)
   bootstrap.list           <- list()
   build.dictionary         <- list("data"              = data,
                                   "formula.fixed"      = formula.fixed,
@@ -66,6 +65,7 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
     cat("\n")
   }
   
+  # Fits model on entire data before bootstrapping
   EstimateMeanSlopeOutput            <- EstimateMeanSlope(build.dictionary)
   PlotEstimateMeanSlopeOutput        <- PlotMeanSlope(EstimateMeanSlopeOutput)
   FitPolynomialOutput                <- FitPolynomial(EstimateMeanSlopeOutput)
@@ -73,13 +73,15 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
   CheckRealRootsOutput               <- CheckRealRoots(FindRealRootsOutput                   = FindRealRootsOutput,
                                                        EstimateMeanSlopeOutput               = EstimateMeanSlopeOutput)
   PolynomialCurveOutput              <- DefinePolynomialCurveAndReciprocal(FitPolynomialOutput)
-  
   CalculateBoundsofIntegrationOutput <- CalculateBoundsofIntegration(CheckRealRootsOutput                     = CheckRealRootsOutput,
                                                                      EstimateMeanSlopeOutput                  = EstimateMeanSlopeOutput,
                                                                      DefinePolynomialCurveAndReciprocalOutput = PolynomialCurveOutput,
                                                                      seq.by                                   = seq.by)
-   for(i in 1:n_iter) {
-    sample.mean.slope             <- sample_n(EstimateMeanSlopeOutput, round(n_sample * nrow(EstimateMeanSlopeOutput)))
+  init.bootstrap.vector    <- rep(NA, length(CalculateBoundsofIntegrationOutput[["integration_domain"]]))
+  for(i in 1:n_iter) {
+     # Bootstrapping
+    sample.mean.slope             <- sample_n(EstimateMeanSlopeOutput, 
+                                              round(n_sample * nrow(EstimateMeanSlopeOutput)))
     sample.polynomial.output      <- FitPolynomial(sample.mean.slope)
     sample.real.roots.output      <- FindRealRoots(sample.polynomial.output)
     sample.check.roots.output     <- CheckRealRoots(sample.real.roots.output,
@@ -106,7 +108,7 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
     cat("\n")
     }
     bootstrap.list[[i]] <- iter.list
-  }
+   }
   bootstrap.dataframe             <- do.call(bind_cols, 
                                              init.bootstrap.dataframe)
   colnames(bootstrap.dataframe)   <- names(bootstrap.list) <-  paste("iter_", 1 : n_iter, sep = "")
