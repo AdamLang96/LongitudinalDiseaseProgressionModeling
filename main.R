@@ -45,7 +45,7 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
     stop("Time_Since_Baseline must be of class numeric")
   }
   
-  if(!all(levels(test.data$ID) %in% unique(test.data$ID))) {
+  if(!all(levels(data$ID) %in% unique(data$ID))) {
     stop("Remove missing ID factor level(s) before modeling")
   }
   
