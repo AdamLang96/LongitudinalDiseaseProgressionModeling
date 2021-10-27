@@ -77,9 +77,7 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
                                                                      EstimateMeanSlopeOutput                  = EstimateMeanSlopeOutput,
                                                                      DefinePolynomialCurveAndReciprocalOutput = PolynomialCurveOutput,
                                                                      seq.by                                   = seq.by)
-  if(CalculateBoundsofIntegrationOutput == "3_FAILS") {
-    stop("3 real roots within bounds of integration. Unable to fit model")
-  }
+  
   init.bootstrap.vector    <- rep(NA, length(CalculateBoundsofIntegrationOutput[["integration_domain"]]))
   for(i in 1:n_iter) {
      # Bootstrapping
