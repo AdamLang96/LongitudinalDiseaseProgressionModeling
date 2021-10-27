@@ -77,7 +77,11 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
                                                                      EstimateMeanSlopeOutput                  = EstimateMeanSlopeOutput,
                                                                      DefinePolynomialCurveAndReciprocalOutput = PolynomialCurveOutput,
                                                                      seq.by                                   = seq.by)
+  if(CalculateBoundsofIntegrationOutput == "3_FAILS") {
+    stop("3 real roots within bounds of integration. Unable to fit model")
+  }
   init.bootstrap.vector    <- rep(NA, length(CalculateBoundsofIntegrationOutput[["integration_domain"]]))
+  j <- 0
   for(i in 1:n_iter) {
      # Bootstrapping
     sample.mean.slope             <- sample_n(EstimateMeanSlopeOutput, 
@@ -91,6 +95,10 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
                                                                   sample.mean.slope,
                                                                   sample.curve.output,
                                                                   seq.by)
+    if(sample.calculate.bounds == "3_FAILS") {
+      warning(paste("iteration ", i, " failed to model and wont be included in final model", sep=""))
+    } else {
+    j <- j + 1
     check.bounds                  <- BootStrapCurves(CalculateBoundsofIntegrationOutput,
                                                      sample.calculate.bounds)
     bootstrap.subset              <- IntegratePolynomial(sample.curve.output,
@@ -103,15 +111,16 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
     iter.list                     <- list("iter_polynomial_coefs"   = sample.polynomial.output,
                                           "iter_root_check"         = sample.check.roots.output,
                                           "iter_integration_bounds" = check.bounds)
+    }
     if(verbose) {
-    cat(paste("fit iteration", i, "out of", n_iter, sep = " "))
+    cat(paste("fit iteration", j, "out of", n_iter, sep = " "))
     cat("\n")
     }
     bootstrap.list[[i]] <- iter.list
    }
   bootstrap.dataframe             <- do.call(bind_cols, 
                                              init.bootstrap.dataframe)
-  colnames(bootstrap.dataframe)   <- names(bootstrap.list) <-  paste("iter_", 1 : n_iter, sep = "")
+  colnames(bootstrap.dataframe)   <- names(bootstrap.list) <-  paste("iter_", 1 : j, sep = "")
                                            
   CalculateSEOutput               <- CalculateSE(CalculateBoundsofIntegrationOutput,
                                                  bootstrap.dataframe)
