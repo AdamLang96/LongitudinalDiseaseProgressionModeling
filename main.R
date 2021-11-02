@@ -77,7 +77,6 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
                                                                      EstimateMeanSlopeOutput                  = EstimateMeanSlopeOutput,
                                                                      DefinePolynomialCurveAndReciprocalOutput = PolynomialCurveOutput,
                                                                      seq.by                                   = seq.by)
-  
   init.bootstrap.vector    <- rep(NA, length(CalculateBoundsofIntegrationOutput[["integration_domain"]]))
   for(i in 1:n_iter) {
      # Bootstrapping
@@ -93,11 +92,17 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
                                                                   sample.curve.output,
                                                                   seq.by)
 
- 
-    check.bounds                  <- BootStrapCurves(CalculateBoundsofIntegrationOutput,
+    
+
+    
+    
+    check.bounds                        <- BootStrapCurves(CalculateBoundsofIntegrationOutput,
                                                      sample.calculate.bounds)
-    bootstrap.subset              <- IntegratePolynomial(sample.curve.output,
+   
+
+    bootstrap.subset                    <- IntegratePolynomial(sample.curve.output,
                                                          check.bounds)
+
     start.index                   <- check.bounds[["start_index"]]
     end.index                     <- check.bounds[["end_index"]]
     bootstrap.vector              <- init.bootstrap.vector
@@ -142,3 +147,4 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
   
   return(final.list)
 }
+

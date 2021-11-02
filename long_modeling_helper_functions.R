@@ -24,14 +24,15 @@ library(RConics)
 #' @return (data.frame) A data frame with columns ID, Midpoints, Rates
 #' 
 
-EstimateMeanSlope <- function(BuildDictionary) {
-  method.logical <- BuildDictionary[["individual.lm"]]
-  data           <- BuildDictionary[["data"]]
-  formula.fixed  <- BuildDictionary[["formula.fixed"]]
-  formula.random <- BuildDictionary[["formula.random"]]
-  model.control  <- BuildDictionary[["lmeControl"]]
-  rate.vec       <- c()
-  midpoint.vec   <- c()
+EstimateMeanSlope <- function(BuildDictionary, test.average, test.new) {
+  method.logical  <- BuildDictionary[["individual.lm"]]
+  data            <- BuildDictionary[["data"]]
+  formula.fixed   <- BuildDictionary[["formula.fixed"]]
+  formula.random  <- BuildDictionary[["formula.random"]]
+  model.control   <- BuildDictionary[["lmeControl"]]
+  rate.vec        <- c()
+  midpoint.vec.av <- midpoint.vec.rate <- c()
+
   if(method.logical) {
     split.data      <- split(data, data$ID)
     ids             <- names(split.data)
@@ -59,18 +60,25 @@ EstimateMeanSlope <- function(BuildDictionary) {
     ids        <- names(splitdata)
     for(i in ids) {
       subj       <- splitdata[[i]]
+      int        <- re["(Intercept)"][i,]
+      int        <- int + fe[["(Intercept)"]]
       rate       <- re["Time_Since_Baseline"][i, ]
       rate       <- rate + fe[["Time_Since_Baseline"]]
       rate.vec   <- append(rate.vec, rate)
       pred.val   <- stats::predict(object = model)
       keeps      <- which(names(pred.val) == i)
       pred.val   <- pred.val[keeps]
-      midpoint   <- (max(pred.val) + min(pred.val)) / 2
-      midpoint.vec  <- append(midpoint.vec, midpoint)
-    }
+      
+      midpoint.av   <- (max(pred.val) + min(pred.val)) / 2
+      midpoint.vec.av  <- append(midpoint.vec.av, midpoint.av)
+      
+      midpoint.rate <- int + (rate * (.5 * max(subj$Time_Since_Baseline)))
+      midpoint.vec.rate  <- append(midpoint.vec.rate, midpoint.rate)
+      
+      }
     mean.slope.data <- data.frame("ID"          = ids,
-                                  "Rates"       = rate.vec, 
-                                  "Midpoints"   = midpoint.vec)
+                                  "Rates"       = rate.vec,
+                                  "Midpoints" = midpoint.vec.rate)
     
   }
   
@@ -207,6 +215,7 @@ CalculateBoundsofIntegration <- function(CheckRealRootsOutput, EstimateMeanSlope
   b <- max.midpoint
   head_subset <- FALSE
   tail_subset <- FALSE
+
   if(number.positive.rates < number.negative.rates) {
     direction <- "decreasing"
   } else {
@@ -274,6 +283,11 @@ CalculateBoundsofIntegration <- function(CheckRealRootsOutput, EstimateMeanSlope
               "direction"            = direction))
   }
   
+
+
+
+
+
 #---------------------------------------------------------------------------------------------
 #' Calculates integral of polynomial along polynomial domain
 #' 
@@ -379,6 +393,33 @@ BootStrapCurves <- function(IntegrationBoundsFull, IntegrationBoundsSample) {
                           
   return(bootstrap.out.list)
 }
+
+BootStrapCurves.test <- function(IntegrationBoundsFull, IntegrationBoundsSample) {
+  integration.domain.full         <- IntegrationBoundsFull[["integration_domain"]]
+  integration.domain.full.start   <- IntegrationBoundsFull[["integration_start"]]
+  integration.domain.full.end     <- IntegrationBoundsFull[["integration_end"]]
+  integration.domain.sample.start <- IntegrationBoundsSample[["integration_start"]]
+  integration.domain.sample.end   <- IntegrationBoundsSample[["integration_end"]]
+  start.values                    <- max(c(integration.domain.full.start, integration.domain.sample.start))
+  end.values                      <- min(c(integration.domain.full.end, integration.domain.sample.end))
+  return(list("start.values" = start.values,
+         "end.values" = end.values,
+         "integration.domain" = integration.domain.full))
+  integration.domain              <- integration.domain.full[integration.domain.full >= start.values & integration.domain.full <= end.values]
+  integration.start               <- integration.domain[1]
+  integration.end                 <- integration.domain[length(integration.domain)]
+  integration.start.index         <- which(integration.domain == integration.start)
+  integration.end.index           <- which(integration.domain == integration.end)
+  bootstrap.out.list              <- list("integration_domain" = integration.domain,
+                                          "integration_start"  = integration.start,
+                                          "integration_end"    = integration.end,
+                                          "start_index"        = integration.start.index,
+                                          "end_index"          = integration.end.index)
+  
+  
+  return(bootstrap.out.list)
+}
+
 
 #--------------------------------------------------------------------------------------------- Generate plots
 #' Plots disease progression curve
