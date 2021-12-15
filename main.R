@@ -48,7 +48,7 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
   if(!all(levels(data$ID) %in% unique(data$ID))) {
     stop("Remove missing ID factor level(s) before modeling")
   }
-  
+
   init.bootstrap.dataframe <- list()
   bootstrap.list           <- list()
   build.dictionary         <- list("data"              = data,
@@ -82,7 +82,10 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
   polyfunctionlist         <- list()
   bounds_integration       <- list()
   if(verbose) {
+    if(n_iter > 1) {
     cat("bootstrapping...")
+    cat("\n")
+    }
   }
   for(i in 1:n_iter) {
 
@@ -127,11 +130,11 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
                                               "iter_root_check"         = bounds_integration)
       bootstrap.list[[i]] <- iter.list
       if(verbose) {
+        if(n_iter > 1) {
         cat(paste("fit iteration", i, "out of", n_iter, sep = " "))
         cat("\n")
-        
+        }
       }
-      
     }
     if(n_iter == 1) {
       bootstrap.dataframe           <- as.data.frame(init.bootstrap.dataframe[[1]])
