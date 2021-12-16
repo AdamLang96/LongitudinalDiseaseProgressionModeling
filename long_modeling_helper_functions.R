@@ -284,18 +284,18 @@ CalculateBoundsofIntegration <- function(CheckRealRootsOutput,
 #' @return (vector) Vector of integrated values 
 #' 
 IntegratePolynomial <- function(integration.domain, polyfunction) {
-  integrated.values.vector  <- c(0)
-  for(k in 2:length(integration.domain)) {
-    integration.val <- try(integrate(polyfunction,
-                                 lower = min(integration.domain),
-                                 upper = integration.domain[k])$val, silent = TRUE)
+  integrated.values.vector  <- c()
+  for(k in 1:length(integration.domain)) {
+    integration.val <- integrate(polyfunction,
+                                     lower = integration.domain[1],
+                                     upper = integration.domain[k])$val
     integration.val <- suppressWarnings(as.numeric(integration.val))
     integrated.values.vector <- suppressWarnings(append(integrated.values.vector, integration.val))
     if(is.na(integration.val)) {
       warning("NA value generated during integration")
     }
   }
- return(integrated.values.vector)
+  return(integrated.values.vector)
 }
 
 #---------------------------------------------------------------------------------------------
@@ -307,19 +307,19 @@ IntegratePolynomial <- function(integration.domain, polyfunction) {
 #' @return (data.frame) Disease progression model data
 #' 
 
-CalculateSE <- function(integration.domain, BootStrappedDF) {
+CalculateSE <- function(integration.domain, BootStrappedDF, n_iter) {
   BootStrappedDF <- as.matrix(BootStrappedDF)
   response       <- integration.domain
   Conf.Low       <- rep(NA, nrow(BootStrappedDF))
   Conf.Hi        <- rep(NA, nrow(BootStrappedDF))
   domain         <- rep(NA, nrow(BootStrappedDF))
+  n              <- n_iter
   for(i in 1 : nrow(BootStrappedDF)) {
-    variance      <- quantile(BootStrappedDF[i, ], 
-                              probs = c(0.05, .95), na.rm = TRUE)
-    Conf.Low[i] <- variance[[1]]
-    Conf.Hi[i]  <- variance[[2]]
-    row.mean    <- mean(BootStrappedDF[i,])
-    domain[i]   <- row.mean
+    row.mean      <- quantile(BootStrappedDF[i,], .5, na.rm = TRUE)
+    variance      <- sd(BootStrappedDF[i,], na.rm = TRUE)
+    Conf.Low[i]   <- quantile(BootStrappedDF[i,], .05, na.rm = TRUE)
+    Conf.Hi[i]    <- quantile(BootStrappedDF[i,], .95, na.rm = TRUE)
+    domain[i]     <- row.mean
     
   }
   disease.progression.data <- cbind(response, domain, Conf.Low, Conf.Hi)
@@ -399,8 +399,8 @@ PlotCurve <- function(data) {
    data            <- data[-na.remove,]
     }
   init.plot       <- ggplot(data = data, aes(x = Domain,  y = Response)) + geom_point()
-  plot.curve      <- init.plot  + geom_line(aes(x=CI_Low, y = Response), linetype  = "dashed")
-  plot.curve      <- plot.curve + geom_line(aes(x=CI_Hi,  y = Response), linetype  = "dashed")
+  plot.curve      <- init.plot  + geom_line(aes(x=CI_Low, y = Response), linetype="dashed")
+  plot.curve      <- plot.curve + geom_line(aes(x=CI_Hi, y = Response), linetype="dashed")
   return(plot.curve)
  }
 
@@ -416,5 +416,28 @@ PlotMeanSlope <- function(data) {
 }
 
 #---------------------------------------------------------------------------------------------
-
-
+ProbabilityNoise <- function(EstimateMeanSlopeOutput, direction) {
+  EstimateMeanSlopeOutput$prob <- rep(NA, nrow(EstimateMeanSlopeOutput))
+  if(direction=="increasing") {
+    if(all(EstimateMeanSlopeOutput$Rates > 0)) {
+      EstimateMeanSlopeOutput$prob <- rep(1, nrow(EstimateMeanSlopeOutput))
+    } else {
+    prob.noise <- length(which(EstimateMeanSlopeOutput$Rates < 0)) / nrow(EstimateMeanSlopeOutput)
+    prob.signal <- 1 - prob.noise
+    EstimateMeanSlopeOutput["prob"][which(EstimateMeanSlopeOutput$Rates < 0),] <- prob.noise
+    EstimateMeanSlopeOutput["prob"][which(EstimateMeanSlopeOutput$Rates > 0),] <- prob.signal
+  }
+  } else {
+    if(direction=="decreasing") {
+      if(all(EstimateMeanSlopeOutput$Rates < 0)) {
+        EstimateMeanSlopeOutput$prob <- rep(1, nrow(EstimateMeanSlopeOutput))
+      } else {
+        prob.noise <- length(which(EstimateMeanSlopeOutput$Rates > 0)) / nrow(EstimateMeanSlopeOutput)
+        prob.signal <- 1 - prob.noise
+        EstimateMeanSlopeOutput["prob"][which(EstimateMeanSlopeOutput$Rates > 0),] <- prob.noise
+        EstimateMeanSlopeOutput["prob"][which(EstimateMeanSlopeOutput$Rates < 0),] <- prob.signal
+      }
+     }
+  }
+  return(EstimateMeanSlopeOutput)
+}
