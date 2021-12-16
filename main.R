@@ -77,6 +77,7 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
                                                                    EstimateMeanSlopeOutput,
                                                                    PolynomialCurveOutput)
   direction <- CalculateBoundsofIntegrationOutput$direction
+  EstimateMeanSlopeOutput <- ProbabilityNoise(EstimateMeanSlopeOutput, direction)
   all.integration.starts   <- c()
   all.integration.ends     <- c()
   polyfunctionlist         <- list()
@@ -87,11 +88,12 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
     cat("\n")
     }
   }
+  
   for(i in 1:n_iter) {
-
-     # Bootstrapping
+     
+    # Bootstrapping
     sample.mean.slope             <- sample_n(EstimateMeanSlopeOutput, 
-                                              round(n_sample * nrow(EstimateMeanSlopeOutput)))
+                                              round(n_sample * nrow(EstimateMeanSlopeOutput)), weight = EstimateMeanSlopeOutput$prob)
     sample.polynomial.output      <- FitPolynomial(sample.mean.slope)
     sample.real.roots.output      <- FindRealRoots(sample.polynomial.output)
     sample.check.roots.output     <- CheckRealRoots(sample.real.roots.output,
@@ -106,22 +108,23 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
    polyfunctionlist[[i]]   <- sample.curve.output
    bounds_integration[[i]] <- sample.calculate.bounds
   }
-
     integration.start        <- min(all.integration.starts)
     integration.end          <- max(all.integration.ends)
     seq.by                   <- (integration.end - integration.start) / seq.by
     integration.domain       <- seq(integration.start, integration.end, by = seq.by)
     init.bootstrap.vector    <- rep(NA, length(integration.domain))
-    
     for(i in 1:n_iter) {
       polyfunction  <- polyfunctionlist[[i]]$Reciprocal_Function
       sample.start  <- all.integration.starts[i]
       sample.end    <- all.integration.ends[i]
       sample.domain <- integration.domain[integration.domain >= sample.start & integration.domain <= sample.end]
+      sample.domain <- sample.domain[2:(length(sample.domain)-1)]
       index.start   <- sample.domain[1]
       index.end     <- sample.domain[length(sample.domain)]
       index.start   <- which(integration.domain == index.start)
       index.end     <- which(integration.domain == index.end)
+      index.start   <- index.start
+      index.end     <- index.end
       curve         <- IntegratePolynomial(sample.domain, polyfunction)
       bootstrap.vector                          <- init.bootstrap.vector
       bootstrap.vector[index.start : index.end] <- curve
@@ -136,23 +139,16 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
         }
       }
     }
+
     if(n_iter == 1) {
       bootstrap.dataframe           <- as.data.frame(init.bootstrap.dataframe[[1]])
     } else {
-    bootstrap.dataframe             <- suppressMessages(do.call(bind_cols, 
-                                                                init.bootstrap.dataframe))
+    bootstrap.dataframe             <- do.call(cbind, init.bootstrap.dataframe)
     }
-    
-   
- 
-    
-    
-  bootstrap.dataframe             <- suppressMessages(do.call(bind_cols, 
-                                             init.bootstrap.dataframe))
   colnames(bootstrap.dataframe)   <- names(bootstrap.list) <-  paste("iter_", 1 : n_iter, sep = "")
-
   CalculateSEOutput               <- CalculateSE(integration.domain,
-                                                 bootstrap.dataframe)
+                                                 bootstrap.dataframe,
+                                                 n_iter = n_iter)
 
   ReorderIfDecreasingOutput       <- ReorderIfDecreasing(CalculateSEOutput, direction)
   PlotCurveOutput                 <- PlotCurve(ReorderIfDecreasingOutput)
@@ -162,17 +158,17 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
     cat("\n")
   }
   
-  final.list <- list("Function_Arguments"      = build.dictionary,
-                     "Model_Output"            = list("Model_Data" = ReorderIfDecreasingOutput,
-                                                      "Model_Plot" = PlotCurveOutput),
-                     "Mean_Slope_Output"       = list("Mean_Slope_Data" = EstimateMeanSlopeOutput,
-                                                      "Mean_Slope_Plot" = PlotEstimateMeanSlopeOutput),
-                     "Polynomial_Coefficients" = FitPolynomialOutput,
-                     "Polynomial_Roots"        = CheckRealRootsOutput,
+  final.list <- list("Function_Arguments"              = build.dictionary,
+                     "Model_Output"                    = list("Model_Data"      = ReorderIfDecreasingOutput,
+                                                              "Model_Plot"      = PlotCurveOutput),
+                     "Mean_Slope_Output"               = list("Mean_Slope_Data" = EstimateMeanSlopeOutput,
+                                                              "Mean_Slope_Plot" = PlotEstimateMeanSlopeOutput),
+                     "Polynomial_Coefficients"         = FitPolynomialOutput,
+                     "Polynomial_Roots"                = CheckRealRootsOutput,
                      "Polynomial/Reciprocal_Functions" = PolynomialCurveOutput,
-                     "Integration_Bounds"      = CalculateBoundsofIntegrationOutput,
-                     "Bootstrapped_Data"       = bootstrap.dataframe,
-                     "Misc_Bootstrap_info"     = bootstrap.list)
+                     "Integration_Bounds"              = CalculateBoundsofIntegrationOutput,
+                     "Bootstrapped_Data"               = bootstrap.dataframe,
+                     "Misc_Bootstrap_info"             = bootstrap.list)
   
   return(final.list)
 
