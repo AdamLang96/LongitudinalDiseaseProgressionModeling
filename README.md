@@ -3,6 +3,7 @@ Longitudinal Disease Progression Modeling
 Adam Lang
 
 -   [Overview](#overview)
+-   [Installation](#installation)
 -   [Model fitting process](#model-fitting-process)
 -   [FitDiseaseProgressionCurve](#fitdiseaseprogressioncurve)
 -   [Example](#example)
@@ -19,6 +20,27 @@ focused studies. This can impose a challenge when estimating the full
 course of AD disease progression. Using methodology described in Budgeon
 et. al \[1\], we can estimate a full-term disease pathology curve from
 short term follow up data.
+
+<br>
+
+Installation
+============
+
+Both ***FitDiseaseProgressionCurve.R*** and
+***FitDiseaseProgressionCurveHelpers.R*** must be downloaded. The
+following packages must be installed:
+
+``` r
+install.packages("purrr") 
+install.packages("plyr") 
+install.packages("dplyr")
+install.packages("stringr")
+install.packages("nlme")
+install.packages("matrixStats")
+install.packages("ggplot2")
+install.packages("RConics")
+install.packages("zoo")
+```
 
 <br>
 
@@ -144,8 +166,7 @@ model.fit  <-  FitDiseaseProgressionCurve(data           = data,
 Estimated population model
 
 ``` r
-modfit<-model.fit$Model_Output$Model_Plot
-ggsave("modelfit.tiff", units="in", width=5, height=4, dpi=500, compression = 'lzw')
+model.fit$Model_Output$Model_Plot
 ```
 
 [![modelfit.png](https://i.postimg.cc/yN2n25cG/modelfit.png)](https://postimg.cc/wtchmwW5)
@@ -154,6 +175,7 @@ ggsave("modelfit.tiff", units="in", width=5, height=4, dpi=500, compression = 'l
 Comparison
 ==========
 
-[![curvewithlines.png](https://i.postimg.cc/c1RT5FHD/curvewithlines.png)](https://postimg.cc/ThPrKqnm)
+Here the red curve is the population sigmoid curve we generated and the
+black curve is the population curve estimated in the model.
 
-Red is the population average, black is the estimated curve
+[![curvewithlines.png](https://i.postimg.cc/c1RT5FHD/curvewithlines.png)](https://postimg.cc/ThPrKqnm)
