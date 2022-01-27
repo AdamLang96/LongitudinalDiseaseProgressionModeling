@@ -6,10 +6,10 @@ pl.5 <- function (a,b,c,f,g, tau) {
 }
 
 
-build.line <- function(length.subj, data, start.sim, eps, id.start, slope.error, b.error) {
-  
-  line.c <- function(slope, point, b, noise.slope, noise.b) {
-    return(((slope + noise.slope) * point) + (b + noise.b))
+build.line <- function(length.subj, data, start.sim, eps, id.start, sample.unif.noise) {
+  line.c <- function(slope, point, b, sample.unif.noise) {
+    sample.unif.noise <- sample.unif.noise * slope
+    return(((slope + sample.unif.noise) * point) + b)
   }
   
   subjects.list <- list()
@@ -20,10 +20,9 @@ build.line <- function(length.subj, data, start.sim, eps, id.start, slope.error,
     b  <- b - (slope * point)
     id <- rep(id.start, length(point))
     sim.Domain <- seq(point - (length.subj / 2), point + (length.subj / 2), by=eps)
-    noise.b <- rnorm(1, 0 , point * b.error)
-    noise.slope <- rnorm(1, 0, point * slope.error)
+    sample.unif.noise <- runif(1, -.1, .1)
     sub <- map(sim.Domain, line.c,
-               slope=slope, b=b, noise.slope = noise.slope, noise.b = noise.b)
+               slope=slope, b=b, sample.unif.noise)
     sub <- data.frame("Domain"   = sim.Domain,
                       "Response" = as.numeric(sub),
                       "id"       = id)
@@ -65,20 +64,6 @@ align.zero <- function(data) {
 
 
 
-build.simulated.dataframe <- function(a,b,c,f,g,dom, length.subj, start.sim, eps, n, id.start, slope.error, b.error) {
-  final.list <- list()
-  sigmoid.df <- build.simulated.sigmoid(a,b,c,f,g,dom)
-  id.start <- id.start
-  data <- sigmoid.df
-  for(i in 1:n) {
-    subjs <- build.line(length.subj, data, start.sim, eps, id.start = id.start, slope.error = slope.error, b.error = b.error)
-    final.list[[i]] <- subjs
-    id.start <- max(subjs[["id"]]) + 1
-  }
-  final.df <- do.call(bind_rows, final.list)
-  aligned.df <- align.zero(final.df)
-  return(list(sigmoid.df, final.df, aligned.df))
-}
 
 
 area.under.curve <- function(data) {
@@ -126,6 +111,8 @@ estimated.pred <- function(sim.ids) {
   return(est.pred)
 }
 
+AddNoise <- function(data) {
+}
 
 
 keep.simulated.subjs <- function(data, a, b) {
@@ -145,25 +132,24 @@ keep.simulated.subjs <- function(data, a, b) {
 }
 
 
-construct.simulated.dataset <- function(a,b,c,f,g, dom, length.subj, data, start.sim, eps, id.start, slope.error, b.error){
- sigmoid.df <- build.simulated.sigmoid(a,b,c,f,g, dom)
- sim.ids   <-  build.line(length.subj, sigmoid.df, start.sim, eps, id.start, slope.error, b.error)
- sim.ids$id <- factor(sim.ids$id)
- data.aligned     <- align.zero(sim.ids)
- data.aligned$id  <- factor(data.aligned$id)
- init.curve.plot  <- ggplot(data = sigmoid.df, aes(x=Domain, y=Response)) + geom_point(colour="red")  + xlim(0,35) + ylab("Simulated Response Value") + xlab("Disease Progression (Years)") + labs(title="Simulated Population Curve")
- curve.with.lines <- ggplot(sim.ids, aes(x=Domain, y=Response)) + theme(legend.position = "none") + geom_line(aes(group=factor(id)), colour=" dark grey") + geom_point(data = sigmoid.df, colour="red") + xlim(0,35) + ylab("Simulated Response Value") + xlab("Disease Progression (Years)") + labs(title="Simulated Subjects Curves")
- time.since.bline <- ggplot(data = data.aligned, aes(x=Domain, y=Response, colour=factor(id))) + geom_line() +theme(legend.position = "none") + ylab("Simulated Response Value") + xlab("Years (From Baseline)") +labs(title="Subjects Realigned at T=0")
- colnames(data.aligned) <- c("Time_Since_Baseline",
-                             "Simulated_Response", 
-                             "ID")
- data.aligned$ID <- factor(data.aligned$ID)
- return(list("data" = data.aligned,
-        "init_curve" = init.curve.plot,
-        "curve_lines" = curve.with.lines,
-        "time_bline" = time.since.bline,
-        "sigmoid_df" = sigmoid.df))
+construct.simulated.dataset <- function(a,b,c,f,g, dom, length.subj, start.sim, eps, id.start){
+  sigmoid.df <- build.simulated.sigmoid(a,b,c,f,g, dom)
+  sim.ids   <-  build.line(length.subj, sigmoid.df, start.sim, eps, id.start)
+  sim.ids$id            <- factor(sim.ids$id)
+  data.aligned          <- align.zero(sim.ids)
+  data.aligned          <- subset(data.aligned, Response >= 0)
+  data.aligned$id  <- factor(data.aligned$id)
+  init.curve.plot  <- ggplot(data = sigmoid.df, aes(x=Domain, y=Response)) + geom_point(colour="red")  + xlim(0,35) + ylab("Simulated Response Value") + xlab("Disease Progression (Years)")
+  curve.with.lines <- ggplot(subset(sim.ids, Response > 0), aes(x=Domain, y=Response)) + theme(legend.position = "none") + geom_line(aes(group=factor(id)), colour="grey") + geom_point(data = sigmoid.df, colour="red") + xlim(0,35) + ylab("Simulated Response Value") + xlab("Disease Progression (Time)") 
+  time.since.bline <- ggplot(data = data.aligned, aes(x=Domain, y=Response)) + geom_line(data = data.aligned, aes(group=factor(id)), colour = "grey") +theme(legend.position = "none") + ylab("Simulated Response Value") + xlab("Years (From Baseline)") 
+  colnames(data.aligned) <- c("Time_Since_Baseline",
+                              "Simulated_Response", 
+                              "ID")
+  data.aligned$ID <- factor(data.aligned$ID)
+  return(list("data" = data.aligned,
+              "init_curve" = init.curve.plot,
+              "curve_lines" = curve.with.lines,
+              "time_bline" = time.since.bline,
+              "sigmoid_df" = sigmoid.df,
+              "sim.ids"    = sim.ids))
 }
-
-
-

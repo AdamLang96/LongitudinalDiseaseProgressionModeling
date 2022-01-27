@@ -32,22 +32,23 @@ EstimateMeanSlope <- function(BuildDictionary) {
   model.control   <- BuildDictionary[["lmeControl"]]
   rate.vec        <- c()
   midpoint.vec.av <- midpoint.vec.rate <- c()
-
+  
   if(method.logical) {
     split.data      <- split(data, data$ID)
     ids             <- names(split.data)
     for(i in 1:length(split.data)) {
       subj          <- split.data[[i]]
       subj.lm       <- lm(formula = as.formula(formula.fixed), data = subj)
+      int           <- coef(subj.lm)[["(Intercept)"]]
       rate          <- coef(subj.lm)[["Time_Since_Baseline"]]
       pred.model    <- predict(subj.lm)
-      midpoint      <- (max(pred.model) + min(pred.model)) / 2
       rate.vec      <- append(rate.vec, rate)
-      midpoint.vec  <- append(midpoint.vec, midpoint)
+      midpoint.rate <- int + (rate * (.5 * max(subj$Time_Since_Baseline)))
+      midpoint.vec.rate  <- append(midpoint.vec.rate, midpoint.rate)
     }
     mean.slope.data <- data.frame("ID"        = ids,
                                   "Rates"     = rate.vec,
-                                  "Midpoints" = midpoint.vec)
+                                  "Midpoints" = midpoint.vec.rate)
     
   } else {
     model      <- lme(as.formula(formula.fixed), 
@@ -69,13 +70,10 @@ EstimateMeanSlope <- function(BuildDictionary) {
       keeps      <- which(names(pred.val) == i)
       pred.val   <- pred.val[keeps]
       
-      midpoint.av   <- (max(pred.val) + min(pred.val)) / 2
-      midpoint.vec.av  <- append(midpoint.vec.av, midpoint.av)
-      
       midpoint.rate <- int + (rate * (.5 * max(subj$Time_Since_Baseline)))
       midpoint.vec.rate  <- append(midpoint.vec.rate, midpoint.rate)
       
-      }
+    }
     mean.slope.data <- data.frame("ID"          = ids,
                                   "Rates"       = rate.vec,
                                   "Midpoints"   = midpoint.vec.rate)
@@ -94,7 +92,7 @@ EstimateMeanSlope <- function(BuildDictionary) {
 FitPolynomial <- function(EstimateMeanSlopeOutput) {
   data <- EstimateMeanSlopeOutput
   third.degree.poly <- lm(Rates ~ poly(Midpoints, 3, raw = TRUE), 
-                                        data = data)
+                          data = data)
   poly.coefs <- coef(third.degree.poly)
   poly.coefs <- list("coef.x3"  = poly.coefs[["poly(Midpoints, 3, raw = TRUE)3"]], 
                      "coef.x2"  = poly.coefs[["poly(Midpoints, 3, raw = TRUE)2"]], 
@@ -139,7 +137,7 @@ CheckRealRoots <- function(FindRealRootsOutput, EstimateMeanSlopeOutput) {
   max.midpoint  <- max(midpoints)
   if(length(roots) == 0) {
     roots.satisfy[[1]] <- list("root" = NA,
-                          "satisfies_condition" = TRUE)
+                               "satisfies_condition" = TRUE)
     all.roots <- TRUE
   } else {
     for(i in 1:length(roots)) {
@@ -173,19 +171,19 @@ DefinePolynomialCurveAndReciprocal <- function(FitPolynomialOutput) {
   poly.coefs      <- FitPolynomialOutput
   PolynomialCurve <- function(x) {
     (poly.coefs[["coef.x3"]] * (x^3)) +
-    (poly.coefs[["coef.x2"]] * (x^2)) +
-    (poly.coefs[["coef.x1"]] * (x))   +
-     poly.coefs[["int"]]
+      (poly.coefs[["coef.x2"]] * (x^2)) +
+      (poly.coefs[["coef.x1"]] * (x))   +
+      poly.coefs[["int"]]
   }
   ReciprocalCurve <- function(x) {
-     1 / ((poly.coefs[["coef.x3"]] * (x^3)) +
-          (poly.coefs[["coef.x2"]] * (x^2)) +
-          (poly.coefs[["coef.x1"]] * (x))   +
+    1 / ((poly.coefs[["coef.x3"]] * (x^3)) +
+           (poly.coefs[["coef.x2"]] * (x^2)) +
+           (poly.coefs[["coef.x1"]] * (x))   +
            poly.coefs[["int"]])
   }
-    
- return(list("Polynomial_Function" = PolynomialCurve,
-             "Reciprocal_Function" = ReciprocalCurve))
+  
+  return(list("Polynomial_Function" = PolynomialCurve,
+              "Reciprocal_Function" = ReciprocalCurve))
 }
 
 #---------------------------------------------------------------------------------------------
@@ -201,8 +199,8 @@ DefinePolynomialCurveAndReciprocal <- function(FitPolynomialOutput) {
 #'   the direction of the curve (positive/negative)
 #'   
 CalculateBoundsofIntegration <- function(CheckRealRootsOutput, 
-                                            EstimateMeanSlopeOutput, 
-                                            DefinePolynomialCurveAndReciprocalOutput) {
+                                         EstimateMeanSlopeOutput, 
+                                         DefinePolynomialCurveAndReciprocalOutput) {
   
   polynomial.curve <- DefinePolynomialCurveAndReciprocalOutput[["Polynomial_Function"]]
   min.midpoint.row <- which.min(EstimateMeanSlopeOutput$Midpoints)
@@ -227,13 +225,13 @@ CalculateBoundsofIntegration <- function(CheckRealRootsOutput,
   roots.vals         <-  unlist(map(roots, pluck, 1))
   integration.points <- c("min"=min.midpoint, "roots"=roots.vals, "max"= max.midpoint)
   if(direction=="increasing") {
-  integration.points <- integration.points[order(integration.points, decreasing = FALSE)]
+    integration.points <- integration.points[order(integration.points, decreasing = FALSE)]
   } else {
     integration.points <- integration.points[order(integration.points, decreasing =TRUE)]
   }
   means.points <- rollapply(integration.points, 
-                           width = 2, by = 1, 
-                           FUN = mean, align = "left")
+                            width = 2, by = 1, 
+                            FUN = mean, align = "left")
   direc <- polynomial.curve(means.points)
   direc <- unlist(Map(function(x) {if(x > 0) {"increasing"} else {"decreasing"}}, direc))
   direc <- c(NA, direc)
@@ -244,19 +242,19 @@ CalculateBoundsofIntegration <- function(CheckRealRootsOutput,
   keep.points <- keep.points[a:b,]
   keep.points["direction"][1,] <- NA
   if(direction=="increasing") {
-  if(nrow(keep.points) == 2) {
-    keep.points$integration_start <- keep.points["integration_points"][1,]
-    keep.points$integration_end   <- keep.points["integration_points"][2,]
-  } else if(nrow(keep.points)==3) {
-    integration.end.row <- which(keep.points$direction==direction)
-    keep.points$integration_start <- keep.points["integration_points"][integration.end.row - 1,]
-    keep.points$integration_end <- keep.points["integration_points"][integration.end.row,]
-  } else if(nrow(keep.points) > 3) {
-    integration.end.row <- which(keep.points$direction==direction)
-    integration.end.row <- min(integration.end.row)
-    keep.points$integration_start <- keep.points["integration_points"][integration.end.row - 1,]
-    keep.points$integration_end <- keep.points["integration_points"][integration.end.row,]
-  }
+    if(nrow(keep.points) == 2) {
+      keep.points$integration_start <- keep.points["integration_points"][1,]
+      keep.points$integration_end   <- keep.points["integration_points"][2,]
+    } else if(nrow(keep.points)==3) {
+      integration.end.row <- which(keep.points$direction==direction)
+      keep.points$integration_start <- keep.points["integration_points"][integration.end.row - 1,]
+      keep.points$integration_end <- keep.points["integration_points"][integration.end.row,]
+    } else if(nrow(keep.points) > 3) {
+      integration.end.row <- which(keep.points$direction==direction)
+      integration.end.row <- min(integration.end.row)
+      keep.points$integration_start <- keep.points["integration_points"][integration.end.row - 1,]
+      keep.points$integration_end <- keep.points["integration_points"][integration.end.row,]
+    }
   } else {
     if(nrow(keep.points) == 2) {
       keep.points$integration_start <- keep.points["integration_points"][1,]
@@ -271,9 +269,9 @@ CalculateBoundsofIntegration <- function(CheckRealRootsOutput,
       keep.points$integration_start <- keep.points["integration_points"][integration.end.row,]
       keep.points$integration_end <- keep.points["integration_points"][integration.end.row + 1,]
     }
-}
-  return(list("roots.frame" = keep.points, "direction" = direction))
   }
+  return(list("roots.frame" = keep.points, "direction" = direction))
+}
 
 
 #---------------------------------------------------------------------------------------------
@@ -287,8 +285,8 @@ IntegratePolynomial <- function(integration.domain, polyfunction) {
   integrated.values.vector  <- c()
   for(k in 1:length(integration.domain)) {
     integration.val <- integrate(polyfunction,
-                                     lower = integration.domain[1],
-                                     upper = integration.domain[k])$val
+                                 lower = integration.domain[1],
+                                 upper = integration.domain[k])$val
     integration.val <- suppressWarnings(as.numeric(integration.val))
     integrated.values.vector <- suppressWarnings(append(integrated.values.vector, integration.val))
     if(is.na(integration.val)) {
@@ -315,7 +313,7 @@ CalculateSE <- function(integration.domain, BootStrappedDF, n_iter) {
   domain         <- rep(NA, nrow(BootStrappedDF))
   n              <- n_iter
   for(i in 1 : nrow(BootStrappedDF)) {
-    row.mean      <- quantile(BootStrappedDF[i,], .5, na.rm = TRUE)
+    row.mean      <- mean(BootStrappedDF[i,], na.rm = TRUE)
     variance      <- sd(BootStrappedDF[i,], na.rm = TRUE)
     Conf.Low[i]   <- quantile(BootStrappedDF[i,], .05, na.rm = TRUE)
     Conf.Hi[i]    <- quantile(BootStrappedDF[i,], .95, na.rm = TRUE)
@@ -343,48 +341,8 @@ ReorderIfDecreasing <- function(CalculateSEOutput, direction) {
     disease.progression.data["CI_Hi"]               <- disease.progression.data["CI_Hi"]  * -1
     disease.progression.data["Response"]            <- disease.progression.data["Response"][nrow(disease.progression.data):1,]
   }
- return(disease.progression.data)  
+  return(disease.progression.data)  
 }
-
-#---------------------------------------------------------------------------------------------
-#' Recalculate bounds of integration for each bootstrap iteration
-#'  to ensure integration step does not fail
-#'  
-#' @param IntegrationBoundsFull (list) CalculateBoundsofIntegrationOutput list
-#' @param IntegrationBoundsSample (list) output from \emph{CalculateBoundsofIntegration} on bootstrapped data
-#' @return (list) list with integration domain, start/end points of integration, index of start/end points
-#' 
-BootStrapCurves <- function(IntegrationBoundsFull, IntegrationBoundsSample) {
-  integration.domain.full         <- IntegrationBoundsFull[["integration_domain"]]
-  integration.domain.full.start   <- IntegrationBoundsFull[["integration_start"]]
-  integration.domain.full.end     <- IntegrationBoundsFull[["integration_end"]]
-  integration.domain.sample.start <- IntegrationBoundsSample[["integration_start"]]
-  integration.domain.sample.end   <- IntegrationBoundsSample[["integration_end"]]
-  start.values                    <- max(c(integration.domain.full.start, integration.domain.sample.start))
-  end.values                      <- min(c(integration.domain.full.end, integration.domain.sample.end))
-  integration.domain              <- integration.domain.full[integration.domain.full >= start.values & integration.domain.full <= end.values]
-  integration.start               <- integration.domain[1]
-  integration.end                 <- integration.domain[length(integration.domain)]
-  integration.start.index         <- which(integration.domain == integration.start)
-  integration.end.index           <- which(integration.domain == integration.end)
-  bootstrap.out.list              <- list("integration_domain" = integration.domain,
-                                          "integration_start"  = integration.start,
-                                          "integration_end"    = integration.end,
-                                          "start_index"        = integration.start.index,
-                                          "end_index"          = integration.end.index)
-                                          
-                          
-  return(bootstrap.out.list)
-}
-
-BootStrapCurves.test <- function(IntegrationBoundsSample, integration.domain, seq.by) {
-  integration.start <- IntegrationBoundsSample$roots.frame[["integration.start"]][1]
-  integration.end   <- IntegrationBoundsSample$roots.frame[["integration.end"]][1]
-
-  return(bootstrap.out.list)
-  
-}
-
 
 #--------------------------------------------------------------------------------------------- Generate plots
 #' Plots disease progression curve
@@ -395,14 +353,14 @@ BootStrapCurves.test <- function(IntegrationBoundsSample, integration.domain, se
 PlotCurve <- function(data) {
   na.remove       <- which(is.na(data$Domain))
   if(length(na.remove) >= 1) {
-   warning("NA values were removed generating plot")
-   data            <- data[-na.remove,]
-    }
+    warning("NA values were removed generating plot")
+    data            <- data[-na.remove,]
+  }
   init.plot       <- ggplot(data = data, aes(x = Domain,  y = Response)) + geom_point()
   plot.curve      <- init.plot  + geom_line(aes(x=CI_Low, y = Response), linetype="dashed")
   plot.curve      <- plot.curve + geom_line(aes(x=CI_Hi, y = Response), linetype="dashed")
   return(plot.curve)
- }
+}
 
 #---------------------------------------------------------------------------------------------
 #' Plots Midpoints vs Rates
@@ -416,28 +374,3 @@ PlotMeanSlope <- function(data) {
 }
 
 #---------------------------------------------------------------------------------------------
-ProbabilityNoise <- function(EstimateMeanSlopeOutput, direction) {
-  EstimateMeanSlopeOutput$prob <- rep(NA, nrow(EstimateMeanSlopeOutput))
-  if(direction=="increasing") {
-    if(all(EstimateMeanSlopeOutput$Rates > 0)) {
-      EstimateMeanSlopeOutput$prob <- rep(1, nrow(EstimateMeanSlopeOutput))
-    } else {
-    prob.noise <- length(which(EstimateMeanSlopeOutput$Rates < 0)) / nrow(EstimateMeanSlopeOutput)
-    prob.signal <- 1 - prob.noise
-    EstimateMeanSlopeOutput["prob"][which(EstimateMeanSlopeOutput$Rates < 0),] <- prob.noise
-    EstimateMeanSlopeOutput["prob"][which(EstimateMeanSlopeOutput$Rates > 0),] <- prob.signal
-  }
-  } else {
-    if(direction=="decreasing") {
-      if(all(EstimateMeanSlopeOutput$Rates < 0)) {
-        EstimateMeanSlopeOutput$prob <- rep(1, nrow(EstimateMeanSlopeOutput))
-      } else {
-        prob.noise <- length(which(EstimateMeanSlopeOutput$Rates > 0)) / nrow(EstimateMeanSlopeOutput)
-        prob.signal <- 1 - prob.noise
-        EstimateMeanSlopeOutput["prob"][which(EstimateMeanSlopeOutput$Rates > 0),] <- prob.noise
-        EstimateMeanSlopeOutput["prob"][which(EstimateMeanSlopeOutput$Rates < 0),] <- prob.signal
-      }
-     }
-  }
-  return(EstimateMeanSlopeOutput)
-}
