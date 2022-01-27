@@ -10,6 +10,7 @@ Adam Lang
     -   [Data](#data)
     -   [Model Fitting](#model-fitting)
 -   [Comparison](#comparison)
+-   [Notes](#notes)
 
 Overview
 ========
@@ -179,3 +180,12 @@ Here the red curve is the population sigmoid curve we generated and the
 black curve is the population curve estimated in the model.
 
 [![curvewithlines.png](https://i.postimg.cc/c1RT5FHD/curvewithlines.png)](https://postimg.cc/ThPrKqnm)
+
+Notes
+=====
+
+The length of the domain is data dependant, as the origin of the curve
+begins at the smallest observed mean in the data. However, the main
+utility of the disease progression curve is to estimate the time between
+disease states, so the origin of the model and the total time span of
+the model is unimportant.
