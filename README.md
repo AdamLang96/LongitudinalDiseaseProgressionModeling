@@ -9,6 +9,7 @@ Adam Lang
 -   [Example](#example)
     -   [Data](#data)
     -   [Model Fitting](#model-fitting)
+    -   [Model Output](#model-output)
 -   [Comparison](#comparison)
 -   [Notes](#notes)
 -   [Citations](#citations)
@@ -103,7 +104,7 @@ set.seed(123)
 
 #generate data based on sigmoid curve
 example.data.list <- construct.simulated.dataset(0.4, 13, .01, .98, 20, seq(0,25,.1),
-                                            length.subj = 3,  start.sim = 51, eps=0.5, id.start = 1)
+                                            length.subj = 3,  start.sim = 51, eps = 0.5, id.start = 1)
 ```
 
 <br>
@@ -174,6 +175,35 @@ model.fit$Model_Output$Model_Plot
 
 [![modelfit.png](https://i.postimg.cc/yN2n25cG/modelfit.png)](https://postimg.cc/wtchmwW5)
 <br>
+
+Model Output
+------------
+
+**FitDiseaseProgressionCurve** Returns a list with the following
+objects:
+
+***Function\_Arguments*** <code>(list)</code> A list of the arguments
+specified in the model fitting
+
+***Model\_Output*** <code>(list)</code> A list with:
+
+   <code>Model\_Data (data.frame)</code> data of estimated population
+model  
+   <code>Model\_Plot (ggplot)</code> plot of estimated population model
+
+***Mean\_Slope\_Output*** <code>(list)</code> A list with:
+
+   <code>Mean\_Slope\_Data (data.frame)</code> data of estimated means
+vs. slopes  
+   <code>Mean\_Slope\_Plot (ggplot)</code> plot of estimated means
+vs. slopes
+
+***IntegrationBounds*** <code>(list)</code> A list with:
+
+   <code>direction (character)</code> whether the model is increasing or
+decreasing (positive or negative)  
+   <code>roots.frame (data.frame)</code> a data.frame with the
+integration start and end points
 
 Comparison
 ==========
