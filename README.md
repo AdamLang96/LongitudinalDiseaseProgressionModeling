@@ -4,13 +4,15 @@ Adam Lang
 
 -   [Overview](#overview)
 -   [Installation](#installation)
--   [Model fitting process](#model-fitting-process)
+-   [Modeling Process](#modeling-process)
 -   [FitDiseaseProgressionCurve](#fitdiseaseprogressioncurve)
 -   [Example](#example)
     -   [Data](#data)
     -   [Model Fitting](#model-fitting)
 -   [Comparison](#comparison)
 -   [Notes](#notes)
+-   [Citations](#citations)
+    -   [Packages](#packages)
 
 Overview
 ========
@@ -45,10 +47,10 @@ install.packages("zoo")
 
 <br>
 
-Model fitting process
-=====================
+Modeling Process
+================
 
-The model fitting process is outlined in detail in [Budgeon et.
+The modeling process to is outlined in detail in [Budgeon et.
 al](https://pubmed.ncbi.nlm.nih.gov/28444781/)
 
 <br>
@@ -85,7 +87,7 @@ subject instead of one mixed effects model <code>(default is
 FALSE)</code>
 
 ***seq.by*** <code>(numeric)</code> \# of times to integrate along
-polynomial reciprocal domain <code>(default is 1000)</code>
+polynomial domain <code>(default is 1000)</code>
 
 Example
 =======
@@ -190,7 +192,50 @@ utility of the disease progression curve is to estimate the time between
 disease states, so the origin of the model and the total time span of
 the model is unimportant.
 
+Citations
+=========
+
 <a id="1">\[1\]</a> Budgeon, Charley et al. “Constructing longitudinal
 disease progression curves using sparse, short-term individual data with
 an application to Alzheimer’s disease.” Statistics in medicine 36 17
 (2017): 2720-2734 .
+
+Packages
+--------
+
+\[2\] Lionel Henry and Hadley Wickham (2019). purrr: Functional
+Programming Tools. R package version 0.3.2.
+<a href="https://CRAN.R-project.org/package=purrr" class="uri">https://CRAN.R-project.org/package=purrr</a>
+
+\[3\] Hadley Wickham (2011). The Split-Apply-Combine Strategy for Data
+Analysis. Journal of Statistical Software, 40(1), 1-29. URL
+<a href="http://www.jstatsoft.org/v40/i01/" class="uri">http://www.jstatsoft.org/v40/i01/</a>.
+
+\[4\] Hadley Wickham, Romain François, Lionel Henry and Kirill Müller
+(2021). dplyr: A Grammar of Data Manipulation. R package version 1.0.7.
+<a href="https://CRAN.R-project.org/package=dplyr" class="uri">https://CRAN.R-project.org/package=dplyr</a>
+
+\[5\] Pinheiro J, Bates D, DebRoy S, Sarkar D, R Core Team (2021). nlme:
+Linear and Nonlinear Mixed Effects Models. R package version 3.1-153,
+&lt;URL:
+<a href="https://CRAN.R-project.org/package=nlme" class="uri">https://CRAN.R-project.org/package=nlme</a>&gt;.
+
+\[6\] Hadley Wickham (2019). stringr: Simple, Consistent Wrappers for
+Common String Operations. R package version 1.4.0.
+<a href="https://CRAN.R-project.org/package=stringr" class="uri">https://CRAN.R-project.org/package=stringr</a>
+
+\[7\] Henrik Bengtsson (2020). matrixStats: Functions that Apply to Rows
+and Columns of Matrices (and to Vectors). R package version 0.57.0.
+<a href="https://CRAN.R-project.org/package=matrixStats" class="uri">https://CRAN.R-project.org/package=matrixStats</a>
+
+\[8\] H. Wickham. ggplot2: Elegant Graphics for Data Analysis.
+Springer-Verlag New York, 2016.
+
+\[9\] Emanuel Huber (2014). RConics: Computations on Conics. R package
+version 1.0.
+<a href="https://CRAN.R-project.org/package=RConics" class="uri">https://CRAN.R-project.org/package=RConics</a>
+
+\[10\] Achim Zeileis and Gabor Grothendieck (2005). zoo: S3
+Infrastructure for Regular and Irregular Time Series. Journal of
+Statistical Software, 14(6), 1-27.
+<a href="doi:10.18637/jss.v014.i06" class="uri">doi:10.18637/jss.v014.i06</a>
