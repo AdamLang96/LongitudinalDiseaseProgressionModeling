@@ -162,9 +162,6 @@ FitDiseaseProgressionCurve <- function(data, formula.fixed,
                                                               "Model_Plot"      = PlotCurveOutput),
                      "Mean_Slope_Output"               = list("Mean_Slope_Data" = EstimateMeanSlopeOutput,
                                                               "Mean_Slope_Plot" = PlotEstimateMeanSlopeOutput),
-                     "Polynomial_Coefficients"         = FitPolynomialOutput,
-                     "Polynomial_Roots"                = CheckRealRootsOutput,
-                     "Polynomial/Reciprocal_Functions" = PolynomialCurveOutput,
                      "Integration_Bounds"              = CalculateBoundsofIntegrationOutput,
                      "Bootstrapped_Data"               = bootstrap.dataframe)
   
