@@ -19,8 +19,8 @@ The trajectory of a given AD biomarker may take decades, however we are
 usually limited to much shorter follow up data in ADNI and other AD
 focused studies. This can impose a challenge when estimating the full
 course of AD disease progression. Using methodology described in Budgeon
-et. al \[1\], we can estimate a full-term disease pathology curve from
-short term follow up data.
+et. al [\[1\]](#1), we can estimate a full-term disease pathology curve
+from short term follow up data.
 
 <br>
 
@@ -128,7 +128,6 @@ Subjects realigned so that baseline is T=0
 Example of data frame for model
 
 ``` r
-set.seed(123)
 data <- example.data.list$data
 knitr::kable(data[1:14,])
 ```
@@ -154,6 +153,7 @@ Model Fitting
 -------------
 
 ``` r
+set.seed(123)
 model.fit  <-  FitDiseaseProgressionCurve(data           = data, 
                                           formula.fixed  = "Simulated_Response ~ Time_Since_Baseline", 
                                           formula.random = "~1 + Time_Since_Baseline|ID", 
@@ -189,3 +189,8 @@ begins at the smallest observed mean in the data. However, the main
 utility of the disease progression curve is to estimate the time between
 disease states, so the origin of the model and the total time span of
 the model is unimportant.
+
+<a id="1">\[1\]</a> Budgeon, Charley et al. “Constructing longitudinal
+disease progression curves using sparse, short-term individual data with
+an application to Alzheimer’s disease.” Statistics in medicine 36 17
+(2017): 2720-2734 .
