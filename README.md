@@ -6,10 +6,12 @@ Adam Lang
 -   [Installation](#installation)
 -   [Modeling Process](#modeling-process)
 -   [FitDiseaseProgressionCurve](#fitdiseaseprogressioncurve)
+    -   [Arguments](#arguments)
+    -   [Returns](#returns)
 -   [Example](#example)
     -   [Data](#data)
     -   [Model Fitting](#model-fitting)
-    -   [Model Output](#model-output)
+-   [Plots](#plots)
 -   [Comparison](#comparison)
 -   [Notes](#notes)
 -   [Citations](#citations)
@@ -59,6 +61,9 @@ al](https://pubmed.ncbi.nlm.nih.gov/28444781/)
 FitDiseaseProgressionCurve
 ==========================
 
+Arguments
+---------
+
 **FitDiseaseProgressionCurve** requires the following arguments:
 
 ***data*** (data.frame) a data frame containing:
@@ -90,6 +95,35 @@ FALSE)</code>
 ***seq.by*** <code>(numeric)</code> \# of times to integrate along
 polynomial domain <code>(default is 1000)</code>
 
+Returns
+-------
+
+**FitDiseaseProgressionCurve** Returns a list with the following
+objects:
+
+***Function\_Arguments*** <code>(list)</code> A list of the arguments
+specified in the model fitting
+
+***Model\_Output*** <code>(list)</code> A list with:
+
+   <code>Model\_Data (data.frame)</code> data of estimated population
+model  
+   <code>Model\_Plot (ggplot)</code> plot of estimated population model
+
+***Mean\_Slope\_Output*** <code>(list)</code> A list with:
+
+   <code>Mean\_Slope\_Data (data.frame)</code> data of estimated means
+vs. slopes  
+   <code>Mean\_Slope\_Plot (ggplot)</code> plot of estimated means
+vs. slopes
+
+***IntegrationBounds*** <code>(list)</code> A list with:
+
+   <code>direction (character)</code> whether the model is increasing or
+decreasing (positive or negative)  
+   <code>roots.frame (data.frame)</code> a data.frame with the
+integration start and end points
+
 Example
 =======
 
@@ -106,27 +140,6 @@ set.seed(123)
 example.data.list <- construct.simulated.dataset(0.4, 13, .01, .98, 20, seq(0,25,.1),
                                             length.subj = 3,  start.sim = 51, eps = 0.5, id.start = 1)
 ```
-
-<br>
-
-Population sigmoidal curve that we will base our data generating process
-on
-
-[![init-curve.png](https://i.postimg.cc/tJ3r351M/init-curve.png)](https://postimg.cc/K3YrFtDP)
-<br>
-
-Longitudinal subject data generated based on our sigmoidal curve with
-noise introduced
-
-[![curve-lines.png](https://i.postimg.cc/j5G9Q2ML/curve-lines.png)](https://postimg.cc/1nrJymhQ)
-
-<br>
-
-Subjects realigned so that baseline is T=0
-
-[![time-bline.png](https://i.postimg.cc/vHy2QpkF/time-bline.png)](https://postimg.cc/xqs35F9t)
-
-<br>
 
 Example of data frame for model
 
@@ -176,34 +189,29 @@ model.fit$Model_Output$Model_Plot
 [![modelfit.png](https://i.postimg.cc/yN2n25cG/modelfit.png)](https://postimg.cc/wtchmwW5)
 <br>
 
-Model Output
-------------
+Plots
+=====
 
-**FitDiseaseProgressionCurve** Returns a list with the following
-objects:
+<br>
 
-***Function\_Arguments*** <code>(list)</code> A list of the arguments
-specified in the model fitting
+Population sigmoidal curve that we will base our data generating process
+on
 
-***Model\_Output*** <code>(list)</code> A list with:
+[![init-curve.png](https://i.postimg.cc/tJ3r351M/init-curve.png)](https://postimg.cc/K3YrFtDP)
+<br>
 
-   <code>Model\_Data (data.frame)</code> data of estimated population
-model  
-   <code>Model\_Plot (ggplot)</code> plot of estimated population model
+Longitudinal subject data generated based on our sigmoidal curve with
+noise introduced
 
-***Mean\_Slope\_Output*** <code>(list)</code> A list with:
+[![curve-lines.png](https://i.postimg.cc/j5G9Q2ML/curve-lines.png)](https://postimg.cc/1nrJymhQ)
 
-   <code>Mean\_Slope\_Data (data.frame)</code> data of estimated means
-vs. slopes  
-   <code>Mean\_Slope\_Plot (ggplot)</code> plot of estimated means
-vs. slopes
+<br>
 
-***IntegrationBounds*** <code>(list)</code> A list with:
+Subjects realigned so that baseline is T=0
 
-   <code>direction (character)</code> whether the model is increasing or
-decreasing (positive or negative)  
-   <code>roots.frame (data.frame)</code> a data.frame with the
-integration start and end points
+[![time-bline.png](https://i.postimg.cc/vHy2QpkF/time-bline.png)](https://postimg.cc/xqs35F9t)
+
+<br>
 
 Comparison
 ==========
