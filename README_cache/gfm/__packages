@@ -1,0 +1,10 @@
+base
+purrr
+plyr
+dplyr
+stringr
+nlme
+matrixStats
+ggplot2
+RConics
+zoo

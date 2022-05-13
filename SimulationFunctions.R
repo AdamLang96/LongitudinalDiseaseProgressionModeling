@@ -111,8 +111,7 @@ estimated.pred <- function(sim.ids) {
   return(est.pred)
 }
 
-AddNoise <- function(data) {
-}
+
 
 
 keep.simulated.subjs <- function(data, a, b) {
